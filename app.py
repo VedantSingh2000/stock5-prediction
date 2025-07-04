@@ -80,8 +80,6 @@ def create_features(df):
     return df_feat
 
 # --- Prediction Logic ---
-#st.experimental_rerun()
-
 with st.spinner("🔄 Fetching data and generating predictions..."):
     df = get_data(selected_ticker, date_range)
 
@@ -89,7 +87,14 @@ with st.spinner("🔄 Fetching data and generating predictions..."):
         st.error("❌ Failed to fetch stock data. Try again later.")
     else:
         feat_df = create_features(df)
-        latest = feat_df.iloc[[-1]].copy()
+
+        # --- Predict only for next trading day ---
+        last_data_date = feat_df.index[-1].date()
+        future_day = last_data_date + timedelta(days=1)
+        while future_day.weekday() >= 5 or future_day in feat_df.index.date:
+            future_day += timedelta(days=1)
+
+        latest = feat_df.loc[[feat_df.index[-1]]].copy()
 
         if manual_open.strip():
             try:
@@ -116,11 +121,6 @@ with st.spinner("🔄 Fetching data and generating predictions..."):
         err = errors[selected_ticker]
         acc_open = 100 - err['open']['mae']
         acc_close = 100 - err['close']['mae']
-
-        last_data_date = feat_df.index[-1].date()
-        future_day = last_data_date + timedelta(days=1)
-        while future_day.weekday() >= 5:
-            future_day += timedelta(days=1)
 
         st.title(f"📈 {tickers[selected_ticker]} Forecast for {future_day.strftime('%Y-%m-%d')}")
 
