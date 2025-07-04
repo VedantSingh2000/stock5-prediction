@@ -121,18 +121,20 @@ with st.spinner("🔄 Fetching data and generating predictions..."):
         err = errors[selected_ticker]
         acc_open = 100 - err['open']['mae']
         acc_close = 100 - err['close']['mae']
+        mae_open = err['open']['mae'] * open_price / 100
+        mae_close = err['close']['mae'] * open_price / 100
 
         st.title(f"📈 {tickers[selected_ticker]} Forecast for {future_day.strftime('%Y-%m-%d')}")
 
-        st.markdown("""
+        st.markdown(f"""
             <div class="prediction-highlight">
                 <h3>🎯 Predictions:</h3>
                 <ul>
-                    <li><b>Predicted Open:</b> ₹{:.2f} ({:+.2f}%)</li>
-                    <li><b>Predicted Close:</b> ₹{:.2f} ({:+.2f}%)</li>
+                    <li><b>Predicted Open:</b> ₹{pred_open_price:.2f} ({pct_open:+.2f}%) ± ₹{mae_open:.2f}</li>
+                    <li><b>Predicted Close:</b> ₹{pred_close_price:.2f} ({pct_close:+.2f}%) ± ₹{mae_close:.2f}</li>
                 </ul>
             </div>
-        """.format(pred_open_price, pct_open, pred_close_price, pct_close), unsafe_allow_html=True)
+        """, unsafe_allow_html=True)
 
         display_df = df[['Open', 'Close']].copy()
         display_df.index = pd.to_datetime(display_df.index).strftime('%Y-%m-%d')
