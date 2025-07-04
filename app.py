@@ -8,6 +8,15 @@ import yfinance as yf
 from datetime import datetime, timedelta
 import plotly.graph_objects as go
 from pandas import Timestamp
+import gdown
+import os
+
+# --- Download large model file from Google Drive ---
+MODEL_FILE_ID = "1Thh23UJpwKsyluzwipRM37p1F5xit1hg"
+MODEL_DEST = "multi_stock_models.pkl"
+
+if not os.path.exists(MODEL_DEST):
+    gdown.download(f"https://drive.google.com/uc?id={MODEL_FILE_ID}", MODEL_DEST, quiet=False)
 
 # --- Load Pre-trained Models ---
 models = joblib.load('multi_stock_models.pkl')
@@ -71,6 +80,8 @@ def create_features(df):
     return df_feat
 
 # --- Prediction Logic ---
+st.experimental_rerun()
+
 with st.spinner("🔄 Fetching data and generating predictions..."):
     df = get_data(selected_ticker, date_range)
 
