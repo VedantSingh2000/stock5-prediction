@@ -130,8 +130,8 @@ with st.spinner("🔄 Fetching data and generating predictions..."):
             <div class="prediction-highlight">
                 <h3>🎯 Predictions:</h3>
                 <ul>
-                    <li><b>Predicted Open:</b> ₹{pred_open_price:.2f} ({pct_open:+.2f}%) ± ₹{mae_open:.2f}</li>
-                    <li><b>Predicted Close:</b> ₹{pred_close_price:.2f} ({pct_close:+.2f}%) ± ₹{mae_close:.2f}</li>
+                    <li><b>Predicted Open:</b> ₹{pred_open_price:.2f} ({pct_open:+.2f}%)</li>
+                    <li><b>Predicted Close:</b> ₹{pred_close_price:.2f} ({pct_close:+.2f}%)</li>
                 </ul>
             </div>
         """, unsafe_allow_html=True)
@@ -177,8 +177,8 @@ with st.spinner("🔄 Fetching data and generating predictions..."):
 
         st.subheader("✅ Model Accuracy")
         col1, col2 = st.columns(2)
-        col1.metric("Open Prediction Accuracy", f"{acc_open:.2f}%")
-        col2.metric("Close Prediction Accuracy", f"{acc_close:.2f}%")
+        col1.metric("Open Prediction Accuracy", f"{acc_open:.2f}% ± ₹{mae_open:.2f}")
+        col2.metric("Close Prediction Accuracy", f"{acc_close:.2f}% ± ₹{mae_close:.2f}")
 
         st.subheader("📊 Price Chart")
         chart_df = df[['Open', 'High', 'Low', 'Close']].copy()
