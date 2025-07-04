@@ -80,7 +80,7 @@ def create_features(df):
     return df_feat
 
 # --- Prediction Logic ---
-st.experimental_rerun()
+#st.experimental_rerun()
 
 with st.spinner("🔄 Fetching data and generating predictions..."):
     df = get_data(selected_ticker, date_range)
