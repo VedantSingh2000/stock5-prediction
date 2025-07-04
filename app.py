@@ -91,7 +91,7 @@ with st.spinner("🔄 Fetching data and generating predictions..."):
         # --- Predict only for next trading day ---
         last_data_date = feat_df.index[-1].date()
         future_day = last_data_date + timedelta(days=1)
-        while future_day.weekday() >= 5 or future_day in feat_df.index.date:
+        while future_day.weekday() >= 5 or pd.Timestamp(future_day) in feat_df.index:
             future_day += timedelta(days=1)
 
         latest = feat_df.loc[[feat_df.index[-1]]].copy()
