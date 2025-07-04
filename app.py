@@ -1,5 +1,3 @@
-# app.py
-
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -38,6 +36,19 @@ st.markdown("""
             border-left: 5px solid #00acc1;
             padding: 5px;
         }
+        /* Styles for accuracy blocks */
+        .accuracy-block {
+            padding: 10px 15px;
+            margin: 5px;
+            border-radius: 6px;
+            color: white;
+            font-weight: bold;
+            display: inline-block; /* To make them appear side-by-side */
+            text-align: center;
+            min-width: 120px; /* Ensure consistent width */
+        }
+        .accuracy-green { background-color: #2e7d32; } /* Dark Green */
+        .accuracy-red { background-color: #c62828; }   /* Dark Red */
     </style>
 """, unsafe_allow_html=True)
 
@@ -140,7 +151,15 @@ with st.spinner("🔄 Fetching data and generating predictions..."):
         # Target/SL Range Calculation
         target = pred_high_price - mae_high
         stop_loss = pred_low_price + mae_low
-        margin_range = target - stop_loss
+        margin_range = target - stop_loss # This is the "Min Margin"
+
+        # --- NEW Calculations for Optimal Margin and Percentages ---
+        optimal_margin_abs = pred_high_price - pred_low_price
+
+        # Calculate percentages relative to predicted open price
+        optimal_margin_pct = (optimal_margin_abs / pred_open_price) * 100 if pred_open_price != 0 else 0
+        min_margin_pct = (margin_range / pred_open_price) * 100 if pred_open_price != 0 else 0
+        # --- END NEW Calculations ---
 
         st.title(f"📈 {tickers[selected_ticker]} Forecast for {future_day.strftime('%Y-%m-%d')}")
 
@@ -157,7 +176,8 @@ with st.spinner("🔄 Fetching data and generating predictions..."):
                 <ul>
                     <li><b>Target:</b> ₹{target:.2f}</li>
                     <li><b>Stop Loss:</b> ₹{stop_loss:.2f}</li>
-                    <li><b>Margin Range:</b> ₹{margin_range:.2f}</li>
+                    <li><b>Optimal Margin:</b> ₹{optimal_margin_abs:.2f} ({optimal_margin_pct:.2f}%)</li>
+                    <li><b>Min Margin:</b> ₹{margin_range:.2f} ({min_margin_pct:.2f}%)</li>
                 </ul>
             </div>
         """, unsafe_allow_html=True)
@@ -208,10 +228,10 @@ with st.spinner("🔄 Fetching data and generating predictions..."):
         st.subheader("✅ Model Accuracy")
         st.markdown(f"""
         <div style="display: flex; justify-content: space-around; padding: 10px; background-color: #1f1f1f; border-radius: 8px;">
-            <div><b>Open:</b><br>{acc_open:.2f}% ± ₹{mae_open:.2f}</div>
-            <div><b>Close:</b><br>{acc_close:.2f}% ± ₹{mae_close:.2f}</div>
-            <div><b>High:</b><br>{acc_high:.2f}% ± ₹{mae_high:.2f}</div>
-            <div><b>Low:</b><br>{acc_low:.2f}% ± ₹{mae_low:.2f}</div>
+            <div class="accuracy-block accuracy-green"><b>Open:</b><br>{acc_open:.2f}% ± ₹{mae_open:.2f}</div>
+            <div class="accuracy-block accuracy-red"><b>Close:</b><br>{acc_close:.2f}% ± ₹{mae_close:.2f}</div>
+            <div class="accuracy-block accuracy-green"><b>High:</b><br>{acc_high:.2f}% ± ₹{mae_high:.2f}</div>
+            <div class="accuracy-block accuracy-red"><b>Low:</b><br>{acc_low:.2f}% ± ₹{mae_low:.2f}</div>
         </div>
         """, unsafe_allow_html=True)
 
@@ -296,44 +316,37 @@ with st.spinner("🔄 Fetching data and generating predictions..."):
             if backtest_results:
                 bt_df = pd.DataFrame(backtest_results)
 
+                # Convert numeric columns to float (prevent formatting errors)
+                for col in bt_df.columns:
+                    if col.startswith("Actual") or col.startswith("Pred"):
+                        bt_df[col] = pd.to_numeric(bt_df[col], errors='coerce')
+
                 for price_type in ["Open", "Close", "High", "Low"]:
                     if f"Pred_{price_type}" in bt_df.columns:
                         bt_df[f"Error_{price_type}"] = abs(bt_df[f"Actual_{price_type}"] - bt_df[f"Pred_{price_type}"])
 
-                if backtest_results:
-                    bt_df = pd.DataFrame(backtest_results)
+                st.markdown("### 📋 Predictions vs Actuals")
+                st.dataframe(
+                    bt_df[[
+                        "Date",
+                        "Actual_Open", "Pred_Open", "Error_Open",
+                        "Actual_Close", "Pred_Close", "Error_Close",
+                        "Actual_High", "Pred_High", "Error_High",
+                        "Actual_Low", "Pred_Low", "Error_Low"
+                    ]].style.format({
+                        "Actual_Open": "₹{:.2f}", "Pred_Open": "₹{:.2f}", "Error_Open": "₹{:.2f}",
+                        "Actual_Close": "₹{:.2f}", "Pred_Close": "₹{:.2f}", "Error_Close": "₹{:.2f}",
+                        "Actual_High": "₹{:.2f}", "Pred_High": "₹{:.2f}", "Error_High": "₹{:.2f}",
+                        "Actual_Low": "₹{:.2f}", "Pred_Low": "₹{:.2f}", "Error_Low": "₹{:.2f}"
+                    }),
+                    use_container_width=True
+                )
 
-                    # Convert numeric columns to float (prevent formatting errors)
-                    for col in bt_df.columns:
-                        if col.startswith("Actual") or col.startswith("Pred"):
-                            bt_df[col] = pd.to_numeric(bt_df[col], errors='coerce')
-
-                    for price_type in ["Open", "Close", "High", "Low"]:
-                        if f"Pred_{price_type}" in bt_df.columns:
-                            bt_df[f"Error_{price_type}"] = abs(bt_df[f"Actual_{price_type}"] - bt_df[f"Pred_{price_type}"])
-
-                    st.markdown("### 📋 Predictions vs Actuals")
-                    st.dataframe(
-                        bt_df[[
-                            "Date",
-                            "Actual_Open", "Pred_Open", "Error_Open",
-                            "Actual_Close", "Pred_Close", "Error_Close",
-                            "Actual_High", "Pred_High", "Error_High",
-                            "Actual_Low", "Pred_Low", "Error_Low"
-                        ]].style.format({
-                            "Actual_Open": "₹{:.2f}", "Pred_Open": "₹{:.2f}", "Error_Open": "₹{:.2f}",
-                            "Actual_Close": "₹{:.2f}", "Pred_Close": "₹{:.2f}", "Error_Close": "₹{:.2f}",
-                            "Actual_High": "₹{:.2f}", "Pred_High": "₹{:.2f}", "Error_High": "₹{:.2f}",
-                            "Actual_Low": "₹{:.2f}", "Pred_Low": "₹{:.2f}", "Error_Low": "₹{:.2f}"
-                        }),
-                        use_container_width=True
-                    )
-
-                    st.markdown("### 📊 Backtest MAE (₹)")
-                    for price_type in ["Open", "Close", "High", "Low"]:
-                        col_name = f"Error_{price_type}"
-                        if col_name in bt_df:
-                            mae = bt_df[col_name].mean()
-                            st.write(f"**{price_type}**: ₹{mae:.2f}")
-                else:
-                    st.warning("Not enough data to perform backtest.")
+                st.markdown("### 📊 Backtest MAE (₹)")
+                for price_type in ["Open", "Close", "High", "Low"]:
+                    col_name = f"Error_{price_type}"
+                    if col_name in bt_df:
+                        mae = bt_df[col_name].mean()
+                        st.write(f"**{price_type}**: ₹{mae:.2f}")
+            else:
+                st.warning("Not enough data to perform backtest.")
